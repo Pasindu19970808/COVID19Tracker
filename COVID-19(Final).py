@@ -205,7 +205,12 @@ class mainpage(tk.Frame):
         menu.delete(0,'end')
         for country in self.countries:
             menu.add_command(label = country, command = lambda value = country:self.region.set(value))
-            
+        
+        #maximum values of each y axis
+        self.maxconfirmed = dict()
+        self.maxdeath = dict()
+        self.maxrecovered = dict()
+        self.maxincrease = dict()
 
         
         #button to plot countries
@@ -233,38 +238,50 @@ class mainpage(tk.Frame):
         
         self.deleteconfirmedcases = tk.Button(self.radiobuttonframe, text = 'Delete Selected Plot from Confirmed Cases', command = lambda: \
                                                                                                                           self.deletecase(self.region.get(),canvasconfirmed,\
-                                                                                                                                    self.aconfirmed, self.aconfirmed2dlinedict))
+                                                                                                                                    self.aconfirmed, self.aconfirmed2dlinedict,\
+                                                                                                                                    self.maxconfirmed, self.confirmedcaselist))
         self.deleteconfirmedcases.grid(row = 6, column = 1, padx = 10, pady = 10)
         
         
         self.deletedeathcase = tk.Button(self.radiobuttonframe, text = 'Delete Selected Plot from Deaths', command = lambda: \
                                                                                                              self.deletecase(self.region.get(),canvasdeath,\
-                                                                                                                                  self.adeath, self.adeath2dlinedict))
+                                                                                                                                  self.adeath, self.adeath2dlinedict,\
+                                                                                                                                  self.maxdeath,self.deathcaselist))
         self.deletedeathcase.grid(row = 7, column = 1, padx = 10, pady = 10)
         
         
         self.deleterecoverycase = tk.Button(self.radiobuttonframe, text = 'Delete Selected Plot from Recovered Cases', command = lambda: \
                                                                                                              self.deletecase(self.region.get(),canvasrecovered,\
-                                                                                                                                  self.arecovered, self.arecovered2dlinedict))
+                                                                                                                                  self.arecovered, self.arecovered2dlinedict,\
+                                                                                                                                  self.maxrecovered,self.recoveredcaselist))
         self.deleterecoverycase.grid(row = 8, column = 1, padx = 10, pady = 10)
 
+        self.deleteincreasebutton = tk.Button(self.radiobuttonframe,text = 'Delete Increase in Cases',command = lambda: \
+                                                                                                self.deletecase(self.region.get(),canvasincrease,\
+                                                                                                                self.aincrease,self.aincrease2dlinedict,\
+                                                                                                                self.maxincrease,self.increasecaselist))
+        self.deleteincreasebutton.grid(row = 9, column = 1, padx = 10, pady = 10)
+        
         
         self.resetbutton = tk.Button(self.radiobuttonframe, text = 'Reset all Graphs', command = lambda: \
-                                                                                         self.resetall(self.aconfirmed,self.adeath,self.arecovered, \
+                                                                                         self.resetall(self.aconfirmed,self.adeath,self.arecovered,self.aincrease, \
                                                                                          self.aconfirmed2dlinedict, \
                                                                                          self.adeath2dlinedict, \
                                                                                          self.arecovered2dlinedict, \
+                                                                                         self.aincrease2dlinedict, \
                                                                                          self.confirmedcaselist, \
                                                                                          self.deathcaselist, \
                                                                                          self.recoveredcaselist, \
-                                                                                         canvasconfirmed, canvasdeath, canvasrecovered))
-        self.resetbutton.grid(row = 9, column = 1, padx = 10, pady = 10)
+                                                                                         self.increasecaselist, \
+                                                                                         self.maxconfirmed, self.maxdeath, self.maxrecovered,self.maxincrease,\
+                                                                                         canvasconfirmed, canvasdeath, canvasrecovered, canvasincrease))
+        self.resetbutton.grid(row = 10, column = 1, padx = 10, pady = 10)
     
         #adding image onto label in the radio button frame
         img = ImageTk.PhotoImage(Image.open(r'C:\Users\ASUS\Desktop\Python code\Covid\covidimage.jpg'))
         self.imagelabel = tk.Label(self.radiobuttonframe, image = img)
         self.imagelabel.image = img
-        self.imagelabel.grid(row = 10, column = 1, padx = 10, pady = 10)
+        self.imagelabel.grid(row = 11, column = 1, padx = 10, pady = 10)
         
     
     
@@ -287,8 +304,16 @@ class mainpage(tk.Frame):
             countryplotdata = countrydata[self.datesstringformat].sum()
             self.aconfirmed.plot_date(self.datesforplotting,countryplotdata,'-',label = country)
             self.aconfirmed2dlinedict[country] = self.aconfirmed.lines[-1]
+            self.maxconfirmed[country] = countryplotdata.max()
+            
+            #self.maxconfirmed.items() turns this to a list of tuples
+            #operator.itemgetter(1) specifies the criteria to look for the maximum
+            maximum = max(self.maxconfirmed.items(),key = operator.itemgetter(1))[1]
+            self.aconfirmed.set_ylim([0,(maximum + (maximum/100))])
+            
             confirmedhandles,confirmedlegend = self.aconfirmed.get_legend_handles_labels()
             self.aconfirmed.legend(confirmedhandles,confirmedlegend)
+           
             #if self.confirmed.legend() is placed after the canvasconfirmed codes, given that 
             #canvas confirmed is already a result of placing the figure on the container 
             #template, the legend needs to be defined first so it applies to the canvasconfirmed
@@ -305,8 +330,15 @@ class mainpage(tk.Frame):
             countryplotdata = countrydata[self.datesstringformat].sum()
             self.adeath.plot_date(self.datesforplotting,countryplotdata,'-',label = country)
             self.adeath2dlinedict[country] = self.adeath.lines[-1]
+            self.maxdeath[country] = countryplotdata.max()
+            
+            #calculating the maximum
+            maximum = max(self.maxdeath.items(), key = operator.itemgetter(1))[1]
+            self.adeath.set_ylim([0,(maximum + (maximum/100))])
+            
             deathhandles,deathlabels = self.adeath.get_legend_handles_labels()
             self.adeath.legend(deathhandles,deathlabels)
+            
             canvasdeath.draw()
             canvasdeath.get_tk_widget().pack(side = tk.TOP, fill = tk.BOTH, expand = True)
         else:
@@ -320,8 +352,15 @@ class mainpage(tk.Frame):
             countryplotdata = countrydata[self.datesstringformat].sum()
             self.arecovered.plot_date(self.datesforplotting,countryplotdata,'-',label = country)
             self.arecovered2dlinedict[country] = self.arecovered.lines[-1]
+            self.maxrecovered[country] = countryplotdata.max()
+            
+            #calculating the maximum
+            maximum = max(self.maxrecovered.items(),key = operator.itemgetter(1))[1]
+            self.arecovered.set_ylim([0,(maximum + (maximum/100))])
+            
             recoveredhandles,recoveredlabels = self.arecovered.get_legend_handles_labels()
             self.arecovered.legend(recoveredhandles,recoveredlabels)
+            
             canvasrecovered.draw()
             canvasrecovered.get_tk_widget().pack(side = tk.TOP, fill = tk.BOTH, expand = True)
         else:
@@ -338,10 +377,19 @@ class mainpage(tk.Frame):
             countryrawdatasubset = countrydata[datesubset].sum()
             #finding the difference between consequent dates
             increases = list(map(operator.sub,countryrawdatasubset,countryrawdatafullset[:-1]))
-            #pos = [i for i, f in enumerate(dailyincreases) if f < 0]
+            
             #as there can be negative values(decrease in number of cases), we set these to zero 
             dailyincreases = [i - i if i < 0 else i for i in increases]
+                      
+                        
             self.aincrease.plot_date(self.datesforplotting[1:], dailyincreases,'-', label = country)
+            
+            #as dailyincreases is a list, it doesn't have a dailyincreases.max() attribute
+            #hence we use max(dailyincreases)
+            self.maxincrease[country] = max(dailyincreases)
+            maximum = max(self.maxincrease.items(),key = operator.itemgetter(1))[1]
+            self.aincrease.set_ylim([0,(maximum + (maximum/100))])
+            
             increasehandles,increaselabels = self.aincrease.get_legend_handles_labels()
             self.aincrease2dlinedict[country] = self.aincrease.lines[-1]
             self.aincrease.legend(increasehandles, increaselabels, loc = 'upper left')
@@ -355,10 +403,27 @@ class mainpage(tk.Frame):
     #canvas is the result for FigureCanvasTkAgg
     #axesname is the instance from add2subplot
     #twolinedict is the dictionary holding the 2dline handle for each plot line
-    def deletecase(self,country,canvas,axesname,twodlinedict):
+    def deletecase(self,country,canvas,axesname,twodlinedict,maxdict,caselist):
         handles,labels = axesname.get_legend_handles_labels()
-        if country in labels:
+        #we can only reconfigure the maximum if there is more than one item in 
+        #it
+        if (country in labels) and (len(maxdict.items())>1):
             axesname.lines.remove(twodlinedict[country])
+            del(twodlinedict[country])
+            del(maxdict[country])
+            caselist.remove(country)
+            #reconfiguring the maximum after deleting one plot
+            maximum = max(maxdict.items(),key = operator.itemgetter(1))[1]
+            handlesafterpltremove,labelsafterpltremove = axesname.get_legend_handles_labels()
+            axesname.set_ylim([0,(maximum + (maximum/100))])
+            axesname.legend(handlesafterpltremove,labelsafterpltremove, loc = 'upper left')
+            canvas.draw()
+            canvas.get_tk_widget().pack(side = tk.TOP, fill = tk.BOTH, expand = True)
+        elif (country in labels) and (len(maxdict.items()) == 1):
+            axesname.lines.remove(twodlinedict[country])
+            del(twodlinedict[country])
+            del(maxdict[country])
+            caselist.remove(country)
             handlesafterpltremove,labelsafterpltremove = axesname.get_legend_handles_labels()
             axesname.legend(handlesafterpltremove,labelsafterpltremove, loc = 'upper left')
             canvas.draw()
@@ -366,26 +431,32 @@ class mainpage(tk.Frame):
         else:
             tk.messagebox.showinfo('Attention','Plot is not available on plot for deletion')
     
-    def resetall(self,confirmedplot, deathplot, recoveredplot, confirmedtwodlinedict, deathtwodlinedict,recoveredtwodlinedict,\
-                 confirmedcases,deathcases, recoveredcases, canvasconfirmed, canvasdeath, canvasrecovered):
+    def resetall(self,confirmedplot, deathplot, recoveredplot, increaseplot, \
+                 confirmedtwodlinedict, deathtwodlinedict,recoveredtwodlinedict, increasetwolinedict, \
+                 confirmedcases,deathcases, recoveredcases, increasecases,\
+                 maxconfirmed,maxdeath,maxrecovered,maxincrease,\
+                 canvasconfirmed, canvasdeath, canvasrecovered, canvasincrease):
+        
         confirmedlabels = confirmedplot.get_legend_handles_labels()[1]
         deathlabels = deathplot.get_legend_handles_labels()[1]
         recoveredlabels = recoveredplot.get_legend_handles_labels()[1]
-        if len(confirmedlabels) > 0 or len(deathlabels) > 0 or len(recoveredlabels) > 0:
-            for axs in (confirmedplot, deathplot, recoveredplot):
+        increaselabels = increaseplot.get_legend_handles_labels()[1]
+        if len(confirmedlabels) > 0 or len(deathlabels) > 0 or len(recoveredlabels) > 0 or len(increaselabels) > 0:
+            for axs in (confirmedplot, deathplot, recoveredplot, increaseplot):
                 axs.lines.clear()
-            for dictionaries in (confirmedtwodlinedict, deathtwodlinedict,recoveredtwodlinedict):
+            for dictionaries in (confirmedtwodlinedict, deathtwodlinedict,recoveredtwodlinedict,increasetwolinedict):
                 dictionaries.clear()
-            for lists in (confirmedcases, deathcases, recoveredcases):
+            for lists in (confirmedcases, deathcases, recoveredcases,increasecases):
                 lists.clear()
-            for canvas in (canvasconfirmed, canvasdeath, canvasrecovered):
+            for lists in (maxconfirmed,maxdeath,maxrecovered,maxincrease):
+                lists.clear()
+            for canvas in (canvasconfirmed, canvasdeath, canvasrecovered,canvasincrease):
                 canvas.draw()
                 canvas.get_tk_widget().pack(side = tk.TOP, fill = tk.BOTH, expand = True)
         else:
             tk.messagebox.showinfo('Attention','No plots available to reset')
-        
-
-      
+    
+ 
         
 
     
